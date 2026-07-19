@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>マイ秘書アプリ</title>
+<style>
+  :root {
+    --blue: #2F6FED;
+    --blue-dark: #1E4FBB;
+    --blue-light: #EAF1FE;
+    --blue-lighter: #F5F9FF;
+    --border: #DCE6F7;
+    --text: #1B2430;
+    --text-soft: #66707E;
+    --danger: #E14B4B;
+    --danger-bg: #FDEBEB;
+    --task-color: #F5A623;
+    --gray-bg: #F1F3F5;
+    --white: #FFFFFF;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--blue-lighter);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN",
+      "Yu Gothic", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------------- ヘッダー ---------------- */
+  header.topbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--blue-dark);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--blue);
+    display: inline-block;
+  }
+  nav.tabs {
+    display: flex;
+    gap: 6px;
+    background: var(--gray-bg);
+    padding: 4px;
+    border-radius: 10px;
+  }
+  .tab-btn {
+    border: none;
+    background: transparent;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-soft);
+    cursor: pointer;
+  }
+  .tab-btn.active {
+    background: var(--blue);
+    color: #fff;
+  }
+
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px 16px 70px;
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ---------------- 共通カード ---------------- */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .card h2 {
+    font-size: 16px;
+    margin: 0 0 14px;
+    color: var(--blue-dark);
+  }
+
+  .summary-badges {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    background: var(--blue-light);
+    color: var(--blue-dark);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* ---------------- フォーム部品 ---------------- */
+  input[type="text"], input[type="date"], select, textarea {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--text);
+  }
+  input[type="text"]:focus, input[type="date"]:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+  textarea { resize: vertical; min-height: 70px; width: 100%; line-height: 1.6; }
+
+  .form-inline {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .form-inline input[type="text"] { flex: 1; min-width: 140px; }
+
+  .task-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .task-form input[type="text"] { flex: 2; min-width: 160px; }
+  .task-form input[type="date"] { flex: 1; min-width: 130px; }
+  .task-form select { flex: 1; min-width: 90px; }
+
+  .note-form { display: flex; flex-direction: column; gap: 10px; }
+  .event-form { display: flex; flex-direction: column; gap: 10px; }
+  .event-form textarea { min-height: 54px; }
+
+  .btn-primary {
+    border: none;
+    background: var(--blue);
+    color: #fff;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: var(--blue-dark); }
+
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    font-size: 14px;
+    color: var(--text-soft);
+  }
+
+  /* ---------------- リスト共通 ---------------- */
+  .empty-msg {
+    color: var(--text-soft);
+    font-size: 13.5px;
+    padding: 10px 2px;
+  }
+  .simple-list { display: flex; flex-direction: column; gap: 8px; }
+  .simple-item {
+    padding: 9px 12px;
+    background: var(--blue-lighter);
+    border-radius: 8px;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .simple-item .item-date {
+    color: var(--text-soft);
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+  .simple-item .item-details {
+    color: var(--text-soft);
+    font-size: 12.5px;
+    margin-top: 3px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  /* ---------------- タスク一覧 ---------------- */
+  .task-list { display: flex; flex-direction: column; gap: 10px; }
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .task-item.overdue { border-color: var(--danger); background: var(--danger-bg); }
+  .task-item.done { opacity: 0.65; }
+  .task-item.done .task-name { text-decoration: line-through; }
+
+  .task-check {
+    width: 20px; height: 20px;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: var(--blue);
+  }
+  .task-main { flex: 1; min-width: 0; }
+  .task-name { font-size: 14.5px; font-weight: 500; }
+  .task-tags {
+    display: flex;
+    gap: 6px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .tag-due { background: var(--gray-bg); color: var(--text-soft); }
+  .tag-due.overdue-text { background: var(--danger-bg); color: var(--danger); }
+  .tag-category { background: var(--blue-light); color: var(--blue-dark); }
+  .tag-priority-高 { background: var(--danger-bg); color: var(--danger); }
+  .tag-priority-中 { background: var(--blue-light); color: var(--blue-dark); }
+  .tag-priority-低 { background: var(--gray-bg); color: var(--text-soft); }
+
+  .icon-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-soft);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { background: var(--danger-bg); color: var(--danger); }
+
+  /* ---------------- メモ一覧 ---------------- */
+  .note-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .note-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    background: var(--blue-lighter);
+  }
+  .note-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .note-title { font-weight: 700; font-size: 14.5px; }
+  .note-body {
+    font-size: 13px;
+    margin-top: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .note-meta { font-size: 11px; color: var(--text-soft); margin-top: 8px; }
+
+  /* ---------------- カレンダー ---------------- */
+  .calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .calendar-header button {
+    border: 1px solid var(--border);
+    background: var(--white);
+    border-radius: 6px;
+    width: 30px; height: 30px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--blue-dark);
+  }
+  .calendar-header button:hover { background: var(--blue-light); }
+  #calendarLabel { font-weight: 700; font-size: 15px; min-width: 110px; text-align: center; }
+
+  .cal-weekdays, .cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .cal-weekdays div {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-soft);
+    padding-bottom: 4px;
+  }
+  .cal-cell {
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    position: relative;
+  }
+  .cal-cell:not(.empty):hover { background: var(--blue-light); }
+  .cal-cell.today .cal-daynum {
+    background: var(--blue);
+    color: #fff;
+    border-radius: 50%;
+    width: 22px; height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cal-cell.selected { background: var(--blue-light); border: 1.5px solid var(--blue); }
+  .cal-dots {
+    display: flex;
+    gap: 3px;
+    margin-top: 2px;
+    height: 5px;
+  }
+  .cal-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+  }
+  .cal-dot-event { background: var(--blue); }
+  .cal-dot-task { background: var(--task-color); }
+  .cal-legend {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--text-soft);
+    margin-top: 10px;
+  }
+  .cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .cal-legend .cal-dot { width: 7px; height: 7px; }
+  .selected-day-panel {
+    margin-top: 14px;
+    border-top: 1px dashed var(--border);
+    padding-top: 12px;
+  }
+  .selected-day-panel h3 {
+    font-size: 13.5px;
+    color: var(--blue-dark);
+    margin: 10px 0 6px;
+  }
+
+  footer.app-footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-soft);
+    padding: 10px 0 40px;
+  }
+
+  @media (max-width: 640px) {
+    .grid-2col { grid-template-columns: 1fr; }
+    .topbar-inner { justify-content: center; }
+    .task-form input[type="text"], .task-form input[type="date"], .task-form select {
+      flex: 1 1 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="dot"></span>マイ秘書アプリ</div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="home">ホーム</button>
+      <button class="tab-btn" data-tab="tasks">タスク</button>
+      <button class="tab-btn" data-tab="notes">メモ</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ================= ホーム ================= -->
+  <section id="tab-home" class="tab-panel active">
+    <div class="summary-badges">
+      <span class="badge">メモ <span id="badgeNoteCount">0</span>件</span>
+      <span class="badge">タスク <span id="badgeTaskCount">0</span>件</span>
+      <span class="badge">未完了 <span id="badgeIncompleteCount">0</span>件</span>
+    </div>
+
+    <div class="card">
+      <h2>予定を追加</h2>
+      <div class="event-form">
+        <div class="form-inline">
+          <input type="date" id="eventDateInput" />
+          <input type="text" id="eventTitleInput" placeholder="タイトル" />
+        </div>
+        <textarea id="eventDetailsInput" placeholder="詳細(任意)"></textarea>
+        <button class="btn-primary" id="addEventBtn" style="align-self:flex-start;">追加</button>
+      </div>
+    </div>
+
+    <div class="grid-2col">
+      <div class="card">
+        <h2>今日の予定</h2>
+        <div class="simple-list" id="todayEventsList"><div class="empty-msg">読み込み中…</div></div>
+      </div>
+      <div class="card">
+        <h2>今日締め切りのタスク</h2>
+        <div class="simple-list" id="todayTasksList"><div class="empty-msg">読み込み中…</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>未完了タスク(締め切りが近い順)</h2>
+      <div class="task-list" id="homeTaskList"><div class="empty-msg">読み込み中…</div></div>
+    </div>
+
+    <div class="card">
+      <h2>今月のカレンダー</h2>
+      <div class="calendar-header">
+        <button id="prevMonthBtn" aria-label="前の月">◀</button>
+        <span id="calendarLabel"></span>
+        <button id="nextMonthBtn" aria-label="次の月">▶</button>
+      </div>
+      <div class="cal-weekdays">
+        <div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div>
+      </div>
+      <div class="cal-days" id="calendarGrid"></div>
+      <div class="cal-legend">
+        <span><span class="cal-dot cal-dot-event"></span>予定</span>
+        <span><span class="cal-dot cal-dot-task"></span>タスク(締切)</span>
+      </div>
+      <div class="selected-day-panel" id="selectedDayPanel">
+        <div class="empty-msg">日付をクリックすると、その日の予定とタスクを表示します。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= タスク ================= -->
+  <section id="tab-tasks" class="tab-panel">
+    <div class="card">
+      <h2>タスクを追加</h2>
+      <div class="task-form">
+        <input type="text" id="taskTitleInput" placeholder="タスク名" />
+        <input type="date" id="taskDueInput" />
+        <select id="taskPriorityInput">
+          <option value="高">優先度: 高</option>
+          <option value="中" selected>優先度: 中</option>
+          <option value="低">優先度: 低</option>
+        </select>
+        <select id="taskCategoryInput">
+          <option value="仕事">仕事</option>
+          <option value="勉強">勉強</option>
+          <option value="趣味">趣味</option>
+          <option value="買い物">買い物</option>
+          <option value="その他" selected>その他</option>
+        </select>
+        <button class="btn-primary" id="addTaskBtn">追加</button>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <label for="categoryFilter">カテゴリーで絞り込み</label>
+      <select id="categoryFilter">
+        <option value="all">すべて</option>
+        <option value="仕事">仕事</option>
+        <option value="勉強">勉強</option>
+        <option value="趣味">趣味</option>
+        <option value="買い物">買い物</option>
+        <option value="その他">その他</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h2>未完了タスク</h2>
+      <div class="task-list" id="taskListIncomplete"><div class="empty-msg">読み込み中…</div></div>
+    </div>
+
+    <div class="card">
+      <h2>完了済みタスク</h2>
+      <div class="task-list" id="taskListDone"><div class="empty-msg">読み込み中…</div></div>
+    </div>
+  </section>
+
+  <!-- ================= メモ ================= -->
+  <section id="tab-notes" class="tab-panel">
+    <div class="card">
+      <h2>メモを追加</h2>
+      <div class="note-form">
+        <input type="text" id="noteTitleInput" placeholder="タイトル" />
+        <textarea id="noteContentInput" placeholder="本文"></textarea>
+        <button class="btn-primary" id="addNoteBtn" style="align-self:flex-start;">追加</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>メモ一覧</h2>
+      <div class="note-grid" id="noteList"><div class="empty-msg">読み込み中…</div></div>
+    </div>
+  </section>
+</main>
+
+<footer class="app-footer">マイ秘書アプリ</footer>
+
+<script>
+/* ==================== 共通ユーティリティ ==================== */
+const API = {
+  notes: '/api/notes',
+  tasks: '/api/tasks',
+  events: '/api/events',
+  summary: '/api/summary',
+};
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function formatDateTime(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${pad2(d.getMonth() + 1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+function formatDateShort(dateStr) {
+  if (!dateStr) return '期限なし';
+  const [y, m, d] = dateStr.split('-');
+  return `${m}/${d}`;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+async function fetchJSON(url, options) {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'エラーが発生しました' }));
+    throw new Error(err.error || 'エラーが発生しました');
+  }
+  return res.json();
+}
+
+/* ==================== タブ切り替え ==================== */
+document.querySelectorAll('.tab-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+  });
+});
+
+/* ==================== データの保持 ==================== */
+let allNotes = [];
+let allTasks = [];
+let allEvents = [];
+let calYear, calMonth; // カレンダーの表示中の年月(月は0始まり)
+let selectedDate = null;
+
+(function initCalendarDate() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+})();
+
+// 締め切り順(期限切れ・期限が近い順)に並び替え。期限なしは最後。
+function sortByDueDate(tasks) {
+  return tasks.slice().sort((a, b) => {
+    const da = a.dueDate || '9999-12-31';
+    const db = b.dueDate || '9999-12-31';
+    return da < db ? -1 : da > db ? 1 : 0;
+  });
+}
+
+/* ==================== 描画: ホーム ==================== */
+function renderHome() {
+  const today = todayStr();
+
+  // 今日の予定
+  const todayEvents = allEvents.filter((e) => e.date === today);
+  const eventsEl = document.getElementById('todayEventsList');
+  eventsEl.innerHTML = todayEvents.length
+    ? todayEvents.map((e) => renderEventItem(e)).join('')
+    : '<div class="empty-msg">今日の予定はありません</div>';
+
+  // 今日締め切りのタスク
+  const todayTasks = allTasks.filter((t) => t.dueDate === today && !t.done);
+  const todayTasksEl = document.getElementById('todayTasksList');
+  todayTasksEl.innerHTML = todayTasks.length
+    ? todayTasks.map((t) => `<div class="simple-item"><span>${escapeHtml(t.title)}</span></div>`).join('')
+    : '<div class="empty-msg">今日締め切りのタスクはありません</div>';
+
+  // 未完了タスク(全体、締め切り順)
+  const incomplete = sortByDueDate(allTasks.filter((t) => !t.done));
+  document.getElementById('homeTaskList').innerHTML = renderTaskItems(incomplete, today, false);
+
+  renderCalendar();
+  renderSelectedDayPanel();
+}
+
+/* ==================== 描画: 予定アイテム(共通) ==================== */
+function renderEventItem(e) {
+  return `
+    <div class="simple-item">
+      <div>
+        <div>${escapeHtml(e.title)}</div>
+        ${e.details ? `<div class="item-details">${escapeHtml(e.details)}</div>` : ''}
+      </div>
+      <button class="icon-btn" data-action="delete-event" data-id="${e.id}">削除</button>
+    </div>`;
+}
+
+/* ==================== 描画: タスクタグ・共通 ==================== */
+function renderTaskItems(tasks, today, isDoneList) {
+  if (tasks.length === 0) {
+    return `<div class="empty-msg">${isDoneList ? '完了したタスクはまだありません' : '未完了のタスクはありません'}</div>`;
+  }
+  return tasks.map((t) => {
+    const overdue = !isDoneList && t.dueDate && t.dueDate < today;
+    return `
+      <div class="task-item ${overdue ? 'overdue' : ''} ${t.done ? 'done' : ''}" data-id="${t.id}">
+        <input type="checkbox" class="task-check" data-action="toggle-task" data-id="${t.id}" ${t.done ? 'checked' : ''} />
+        <div class="task-main">
+          <div class="task-name">${escapeHtml(t.title)}</div>
+          <div class="task-tags">
+            <span class="tag tag-due ${overdue ? 'overdue-text' : ''}">${overdue ? '期限切れ: ' : '期限: '}${formatDateShort(t.dueDate)}</span>
+            <span class="tag tag-priority-${t.priority}">優先度 ${t.priority}</span>
+            <span class="tag tag-category">${escapeHtml(t.category)}</span>
+          </div>
+        </div>
+        <button class="icon-btn" data-action="delete-task" data-id="${t.id}">削除</button>
+      </div>`;
+  }).join('');
+}
+
+/* ==================== 描画: タスクタブ ==================== */
+function renderTasksTab() {
+  const today = todayStr();
+  const filter = document.getElementById('categoryFilter').value;
+  const filtered = filter === 'all' ? allTasks : allTasks.filter((t) => t.category === filter);
+
+  const incomplete = sortByDueDate(filtered.filter((t) => !t.done));
+  const done = filtered.filter((t) => t.done);
+
+  document.getElementById('taskListIncomplete').innerHTML = renderTaskItems(incomplete, today, false);
+  document.getElementById('taskListDone').innerHTML = renderTaskItems(done, today, true);
+}
+
+document.getElementById('categoryFilter').addEventListener('change', renderTasksTab);
+
+/* ==================== 描画: メモタブ ==================== */
+function renderNotesTab() {
+  const listEl = document.getElementById('noteList');
+  if (allNotes.length === 0) {
+    listEl.innerHTML = '<div class="empty-msg">まだメモがありません</div>';
+    return;
+  }
+  listEl.innerHTML = allNotes.map((n) => `
+    <div class="note-card" data-id="${n.id}">
+      <div class="note-head">
+        <div class="note-title">${escapeHtml(n.title)}</div>
+        <button class="icon-btn" data-action="delete-note" data-id="${n.id}">削除</button>
+      </div>
+      ${n.content ? `<div class="note-body">${escapeHtml(n.content)}</div>` : ''}
+      <div class="note-meta">${formatDateTime(n.createdAt)}</div>
+    </div>
+  `).join('');
+}
+
+/* ==================== 描画: 集計バッジ ==================== */
+function renderBadges() {
+  const incomplete = allTasks.filter((t) => !t.done).length;
+  document.getElementById('badgeNoteCount').textContent = allNotes.length;
+  document.getElementById('badgeTaskCount').textContent = allTasks.length;
+  document.getElementById('badgeIncompleteCount').textContent = incomplete;
+}
+
+/* ==================== 描画: カレンダー ==================== */
+function renderCalendar() {
+  const label = document.getElementById('calendarLabel');
+  label.textContent = `${calYear}年 ${calMonth + 1}月`;
+
+  const eventDates = new Set(allEvents.map((e) => e.date));
+  const taskDueDates = new Set(allTasks.filter((t) => t.dueDate).map((t) => t.dueDate));
+
+  const firstDay = new Date(calYear, calMonth, 1);
+  const startWeekday = firstDay.getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = todayStr();
+
+  let html = '';
+  for (let i = 0; i < startWeekday; i++) {
+    html += '<div class="cal-cell empty"></div>';
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${calYear}-${pad2(calMonth + 1)}-${pad2(d)}`;
+    const classes = ['cal-cell'];
+    if (dateStr === today) classes.push('today');
+    if (dateStr === selectedDate) classes.push('selected');
+    const hasEvent = eventDates.has(dateStr);
+    const hasTask = taskDueDates.has(dateStr);
+    let dots = '';
+    if (hasEvent || hasTask) {
+      dots = '<span class="cal-dots">'
+        + (hasEvent ? '<span class="cal-dot cal-dot-event"></span>' : '')
+        + (hasTask ? '<span class="cal-dot cal-dot-task"></span>' : '')
+        + '</span>';
+    }
+    html += `<div class="${classes.join(' ')}" data-date="${dateStr}">
+        <span class="cal-daynum">${d}</span>
+        ${dots}
+      </div>`;
+  }
+  document.getElementById('calendarGrid').innerHTML = html;
+}
+
+function renderSelectedDayPanel() {
+  const panel = document.getElementById('selectedDayPanel');
+  if (!selectedDate) {
+    panel.innerHTML = '<div class="empty-msg">日付をクリックすると、その日の予定とタスクを表示します。</div>';
+    return;
+  }
+  const [y, m, d] = selectedDate.split('-');
+  const dayEvents = allEvents.filter((e) => e.date === selectedDate);
+  const dayTasks = allTasks.filter((t) => t.dueDate === selectedDate);
+
+  let html = `<div style="font-weight:700; font-size:14px;">${y}年${Number(m)}月${Number(d)}日</div>`;
+  html += '<h3>予定</h3>';
+  html += dayEvents.length
+    ? `<div class="simple-list">${dayEvents.map((e) => renderEventItem(e)).join('')}</div>`
+    : '<div class="empty-msg">この日の予定はありません</div>';
+
+  html += '<h3>タスク</h3>';
+  html += dayTasks.length
+    ? `<div class="task-list">${renderTaskItems(dayTasks, todayStr(), false)}</div>`
+    : '<div class="empty-msg">この日が締め切りのタスクはありません</div>';
+
+  panel.innerHTML = html;
+}
+
+document.getElementById('prevMonthBtn').addEventListener('click', () => {
+  calMonth -= 1;
+  if (calMonth < 0) { calMonth = 11; calYear -= 1; }
+  renderCalendar();
+});
+document.getElementById('nextMonthBtn').addEventListener('click', () => {
+  calMonth += 1;
+  if (calMonth > 11) { calMonth = 0; calYear += 1; }
+  renderCalendar();
+});
+document.getElementById('calendarGrid').addEventListener('click', (e) => {
+  const cell = e.target.closest('.cal-cell[data-date]');
+  if (!cell) return;
+  selectedDate = cell.dataset.date;
+  renderCalendar();
+  renderSelectedDayPanel();
+});
+
+/* ==================== 全体再読み込み ==================== */
+async function refreshAll() {
+  [allNotes, allTasks, allEvents] = await Promise.all([
+    fetchJSON(API.notes),
+    fetchJSON(API.tasks),
+    fetchJSON(API.events),
+  ]);
+  renderBadges();
+  renderHome();
+  renderTasksTab();
+  renderNotesTab();
+}
+
+/* ==================== イベント登録: 予定 ==================== */
+document.getElementById('eventDateInput').value = todayStr();
+document.getElementById('addEventBtn').addEventListener('click', async () => {
+  const dateInput = document.getElementById('eventDateInput');
+  const titleInput = document.getElementById('eventTitleInput');
+  const detailsInput = document.getElementById('eventDetailsInput');
+  const title = titleInput.value.trim();
+  if (!title) { alert('予定のタイトルを入力してください'); return; }
+  try {
+    await fetchJSON(API.events, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: dateInput.value || todayStr(),
+        title,
+        details: detailsInput.value.trim(),
+      }),
+    });
+    titleInput.value = '';
+    detailsInput.value = '';
+    await refreshAll();
+  } catch (e) { alert(e.message); }
+});
+
+/* ==================== イベント登録: タスク ==================== */
+document.getElementById('addTaskBtn').addEventListener('click', async () => {
+  const titleInput = document.getElementById('taskTitleInput');
+  const dueInput = document.getElementById('taskDueInput');
+  const priorityInput = document.getElementById('taskPriorityInput');
+  const categoryInput = document.getElementById('taskCategoryInput');
+  const title = titleInput.value.trim();
+  if (!title) { alert('タスク名を入力してください'); return; }
+  try {
+    await fetchJSON(API.tasks, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        dueDate: dueInput.value || null,
+        priority: priorityInput.value,
+        category: categoryInput.value,
+      }),
+    });
+    titleInput.value = '';
+    dueInput.value = '';
+    await refreshAll();
+  } catch (e) { alert(e.message); }
+});
+
+/* ==================== イベント登録: メモ ==================== */
+document.getElementById('addNoteBtn').addEventListener('click', async () => {
+  const titleInput = document.getElementById('noteTitleInput');
+  const contentInput = document.getElementById('noteContentInput');
+  const title = titleInput.value.trim();
+  const content = contentInput.value.trim();
+  if (!title && !content) { alert('タイトルまたは本文を入力してください'); return; }
+  try {
+    await fetchJSON(API.notes, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content }),
+    });
+    titleInput.value = '';
+    contentInput.value = '';
+    await refreshAll();
+  } catch (e) { alert(e.message); }
+});
+
+/* ==================== クリック委譲: 削除・完了切り替え ==================== */
+document.body.addEventListener('click', async (e) => {
+  const delNote = e.target.closest('[data-action="delete-note"]');
+  if (delNote) {
+    if (!confirm('このメモを削除しますか?')) return;
+    try {
+      await fetchJSON(`${API.notes}/${delNote.dataset.id}`, { method: 'DELETE' });
+      await refreshAll();
+    } catch (err) { alert(err.message); }
+    return;
+  }
+
+  const delTask = e.target.closest('[data-action="delete-task"]');
+  if (delTask) {
+    if (!confirm('このタスクを削除しますか?')) return;
+    try {
+      await fetchJSON(`${API.tasks}/${delTask.dataset.id}`, { method: 'DELETE' });
+      await refreshAll();
+    } catch (err) { alert(err.message); }
+    return;
+  }
+
+  const delEvent = e.target.closest('[data-action="delete-event"]');
+  if (delEvent) {
+    if (!confirm('この予定を削除しますか?')) return;
+    try {
+      await fetchJSON(`${API.events}/${delEvent.dataset.id}`, { method: 'DELETE' });
+      await refreshAll();
+    } catch (err) { alert(err.message); }
+    return;
+  }
+});
+
+document.body.addEventListener('change', async (e) => {
+  const checkbox = e.target.closest('[data-action="toggle-task"]');
+  if (!checkbox) return;
+  try {
+    await fetchJSON(`${API.tasks}/${checkbox.dataset.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ done: checkbox.checked }),
+    });
+    await refreshAll();
+  } catch (err) { alert(err.message); }
+});
+
+refreshAll().catch((e) => console.error(e));
+</script>
+</body>
+</html>
