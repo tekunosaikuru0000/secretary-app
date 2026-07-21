@@ -123,6 +123,24 @@
     font-weight: 600;
   }
 
+  .today-date-card {
+    text-align: center;
+    background: var(--blue);
+    border: none;
+  }
+  .today-date-card .today-label {
+    color: #fff;
+    opacity: 0.85;
+    font-size: 12.5px;
+    letter-spacing: 0.06em;
+  }
+  .today-date-card .today-date {
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+
   /* ---------------- フォーム部品 ---------------- */
   input[type="text"], input[type="date"], select, textarea {
     font-family: inherit;
@@ -406,6 +424,7 @@
     <div class="brand"><span class="dot"></span>マイ秘書アプリ</div>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="home">ホーム</button>
+      <button class="tab-btn" data-tab="input">入力</button>
       <button class="tab-btn" data-tab="tasks">タスク</button>
       <button class="tab-btn" data-tab="notes">メモ</button>
     </nav>
@@ -415,22 +434,9 @@
 <main>
   <!-- ================= ホーム ================= -->
   <section id="tab-home" class="tab-panel active">
-    <div class="summary-badges">
-      <span class="badge">メモ <span id="badgeNoteCount">0</span>件</span>
-      <span class="badge">タスク <span id="badgeTaskCount">0</span>件</span>
-      <span class="badge">未完了 <span id="badgeIncompleteCount">0</span>件</span>
-    </div>
-
-    <div class="card">
-      <h2>予定を追加</h2>
-      <div class="event-form">
-        <div class="form-inline">
-          <input type="date" id="eventDateInput" />
-          <input type="text" id="eventTitleInput" placeholder="タイトル" />
-        </div>
-        <textarea id="eventDetailsInput" placeholder="詳細(任意)"></textarea>
-        <button class="btn-primary" id="addEventBtn" style="align-self:flex-start;">追加</button>
-      </div>
+    <div class="card today-date-card">
+      <div class="today-label">今日の日付</div>
+      <div class="today-date" id="todayDateDisplay"></div>
     </div>
 
     <div class="grid-2col">
@@ -470,8 +476,20 @@
     </div>
   </section>
 
-  <!-- ================= タスク ================= -->
-  <section id="tab-tasks" class="tab-panel">
+  <!-- ================= 入力 ================= -->
+  <section id="tab-input" class="tab-panel">
+    <div class="card">
+      <h2>予定を追加</h2>
+      <div class="event-form">
+        <div class="form-inline">
+          <input type="date" id="eventDateInput" />
+          <input type="text" id="eventTitleInput" placeholder="タイトル" />
+        </div>
+        <textarea id="eventDetailsInput" placeholder="詳細(任意)"></textarea>
+        <button class="btn-primary" id="addEventBtn" style="align-self:flex-start;">追加</button>
+      </div>
+    </div>
+
     <div class="card">
       <h2>タスクを追加</h2>
       <div class="task-form">
@@ -493,6 +511,18 @@
       </div>
     </div>
 
+    <div class="card">
+      <h2>メモを追加</h2>
+      <div class="note-form">
+        <input type="text" id="noteTitleInput" placeholder="タイトル" />
+        <textarea id="noteContentInput" placeholder="本文"></textarea>
+        <button class="btn-primary" id="addNoteBtn" style="align-self:flex-start;">追加</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= タスク ================= -->
+  <section id="tab-tasks" class="tab-panel">
     <div class="filter-row">
       <label for="categoryFilter">カテゴリーで絞り込み</label>
       <select id="categoryFilter">
@@ -518,15 +548,6 @@
 
   <!-- ================= メモ ================= -->
   <section id="tab-notes" class="tab-panel">
-    <div class="card">
-      <h2>メモを追加</h2>
-      <div class="note-form">
-        <input type="text" id="noteTitleInput" placeholder="タイトル" />
-        <textarea id="noteContentInput" placeholder="本文"></textarea>
-        <button class="btn-primary" id="addNoteBtn" style="align-self:flex-start;">追加</button>
-      </div>
-    </div>
-
     <div class="card">
       <h2>メモ一覧</h2>
       <div class="note-grid" id="noteList"><div class="empty-msg">読み込み中…</div></div>
@@ -616,6 +637,7 @@ function sortByDueDate(tasks) {
 /* ==================== 描画: ホーム ==================== */
 function renderHome() {
   const today = todayStr();
+  renderTodayDate();
 
   // 今日の予定
   const todayEvents = allEvents.filter((e) => e.date === today);
@@ -708,12 +730,12 @@ function renderNotesTab() {
   `).join('');
 }
 
-/* ==================== 描画: 集計バッジ ==================== */
-function renderBadges() {
-  const incomplete = allTasks.filter((t) => !t.done).length;
-  document.getElementById('badgeNoteCount').textContent = allNotes.length;
-  document.getElementById('badgeTaskCount').textContent = allTasks.length;
-  document.getElementById('badgeIncompleteCount').textContent = incomplete;
+/* ==================== 描画: 今日の日付 ==================== */
+function renderTodayDate() {
+  const now = new Date();
+  const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+  const text = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日(${weekdays[now.getDay()]})`;
+  document.getElementById('todayDateDisplay').textContent = text;
 }
 
 /* ==================== 描画: カレンダー ==================== */
@@ -804,7 +826,6 @@ async function refreshAll() {
     fetchJSON(API.tasks),
     fetchJSON(API.events),
   ]);
-  renderBadges();
   renderHome();
   renderTasksTab();
   renderNotesTab();
